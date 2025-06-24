@@ -12,7 +12,7 @@ contract CategoryLogic is Initializable, OwnableUpgradeable {
     ICategoryStorage private _categoryStorage;
 
     function initialize(address categoryStorage) public initializer {
-        __Ownable_init();
+        __Ownable_init(msg.sender);
         _categoryStorage = ICategoryStorage(categoryStorage);
     }
 
