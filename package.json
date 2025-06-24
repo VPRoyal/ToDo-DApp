@@ -4,6 +4,7 @@
     "hardhat": "^2.24.3"
   },
   "dependencies": {
+    "@metamask/providers": "^22.1.0",
     "dotenv": "^16.5.0"
   }
 }

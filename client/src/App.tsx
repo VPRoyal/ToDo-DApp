@@ -1,35 +1,47 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// src/App.tsx
+import React from 'react';
+import MainLayout from './components/layout/mainLayout';
+import TaskForm from './components/tasks/taskList';
+import TaskList from './components/tasks/taskList';
+import { useWeb3 } from './hooks/useWeb3';
 
-function App() {
-  const [count, setCount] = useState(0)
+const App: React.FC = () => {
+  const { address, connect } = useWeb3();
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <MainLayout>
+      <div className="max-w-4xl mx-auto">
+        {!address ? (
+          <div className="text-center py-10">
+            <h2 className="text-2xl font-bold mb-4">
+              Welcome to Todo DApp
+            </h2>
+            <button
+              onClick={connect}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Connect Wallet
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">
+                Create New Task
+              </h2>
+              <TaskForm />
+            </div>
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">
+                Your Tasks
+              </h2>
+              <TaskList />
+            </div>
+          </div>
+        )}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    </MainLayout>
+  );
+};
 
-export default App
+export default App;
