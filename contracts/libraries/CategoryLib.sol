@@ -1,17 +1,18 @@
-// libraries/CategoryLib.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "../interfaces/ITodoList.sol";
+import "../interfaces/ITypes.sol";
 
+/// @title CategoryLib
+/// @notice Utility library for creating and validating categories
 library CategoryLib {
-    function createCategoryStruct(
+    function buildCategory(
         uint256 id,
         string memory name,
         string memory color,
         address owner
-    ) internal pure returns (ITodoList.Category memory) {
-        return ITodoList.Category({
+    ) internal pure returns (ITypes.Category memory) {
+        return ITypes.Category({
             id: id,
             name: name,
             color: color,
@@ -19,8 +20,7 @@ library CategoryLib {
         });
     }
 
-    function validateCategoryName(string memory name) internal pure returns (bool) {
+    function validateCategoryName(string memory name) internal pure {
         require(bytes(name).length > 0 && bytes(name).length <= 50, "Invalid category name length");
-        return true;
     }
 }

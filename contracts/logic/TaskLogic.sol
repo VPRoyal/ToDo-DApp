@@ -1,308 +1,133 @@
-// logic/TaskLogic.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import "../interfaces/ITodoList.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
+// import "../interfaces/ITypes.sol" as ITypes;
 import "../interfaces/ITaskStorage.sol";
+import "../interfaces/IStorageAccessRegistry.sol";
 import "../libraries/ValidationLib.sol";
 import "../libraries/TaskLib.sol";
+import "../interfaces/ITaskLogic.sol";
+import "../interfaces/ITypes.sol";
 
-/**
- * @title TaskLogic
- * @dev Logic contract for task management operations
- */
-contract TaskLogic is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
-    ITaskStorage private _taskStorage;
+/// @title TaskLogic
+/// @notice Handles core task operations in a modular, upgradable, secure way
+contract TaskLogic is Initializable,UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuardUpgradeable, ITaskLogic {
+    using TaskLib for ITypes.Task;
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
-    }
+    IStorageAccessRegistry public registry;
 
-    // Events
-    event TaskMetadataUpdated(uint256 indexed taskId, string newDescription);
-    event TaskTagsUpdated(uint256 indexed taskId, string[] newTags);
-    event TaskCategoryUpdated(uint256 indexed taskId, uint256 newCategoryId);
-    event TaskPriorityUpdated(uint256 indexed taskId, ITodoList.Priority newPriority);
-
-    /**
-     * @dev Initializes the contract
-     * @param taskStorage Address of the task storage contract
-     */
-    function initialize(address taskStorage) public initializer {
+/// @custom:oz-upgrades-unsafe-allow constructor
+constructor() {
+    _disableInitializers();
+}
+    function initialize(address registryAddress) public initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
-        
-        _taskStorage = ITaskStorage(taskStorage);
+        registry = IStorageAccessRegistry(registryAddress);
+    }
+    function _authorizeUpgrade(address) internal override onlyOwner {}
+
+    modifier onlyExistingTask(uint256 taskId) {
+        ITaskStorage taskStorage = ITaskStorage(registry.getContract("TASK_STORAGE"));
+        require(taskStorage.exists(taskId), "Task does not exist");
+        _;
     }
 
-    /**
-     * @dev Creates a new task
-     */
-    function createTask(
-        string calldata _content,
-        string calldata _description,
-        ITodoList.Priority _priority,
-        uint256 _dueDate,
-        uint256 _categoryId,
-        string[] calldata _tags
-    ) external nonReentrant returns (uint256) {
-        ValidationLib.validateTaskCreation(_content, _dueDate, msg.sender);
+    function createTask(ITypes.TaskCreationParams calldata taskParams) external returns (uint256) {
+        ITaskStorage taskStorage = ITaskStorage(registry.getContract("TASK_STORAGE"));
 
-        ITodoList.Task memory newTask = TaskLib.createTaskStruct(
-            0, // ID will be assigned by storage
-            _content,
-            _description,
-            _priority,
-            _dueDate,
-            _categoryId,
-            _tags,
-            msg.sender
+        ValidationLib.validateTaskCreation(taskParams.content, taskParams.dueDate);
+
+        ITypes.Task memory newTask = TaskLib.buildTask(
+            0,
+            taskParams.content,
+            taskParams.description,
+            taskParams.priority,
+            taskParams.dueDate,
+            taskParams.categoryId,
+            taskParams.tags,
+            taskParams.owner
         );
 
-        return _taskStorage.storeTask(newTask);
+        return taskStorage.storeTask(newTask);
     }
 
-    /**
-     * @dev Updates an existing task
-     */
-    function updateTask(
-        uint256 _taskId,
-        string calldata _content,
-        string calldata _description,
-        ITodoList.Priority _priority,
-        uint256 _dueDate,
-        string[] calldata _tags,
-        address _caller
-    ) external nonReentrant returns (ITodoList.Task memory) {
-        ITodoList.Task memory task = _taskStorage.getTask(_taskId);
-        ValidationLib.validateTaskModification(task, _caller);
-        ValidationLib.validateTaskCreation(_content, _dueDate, _caller);
+    function updateTask(ITypes.TaskUpdateParams calldata taskUpdateParams) external onlyExistingTask(taskUpdateParams.taskId) returns (ITypes.Task memory) {
+        ITaskStorage taskStorage = ITaskStorage(registry.getContract("TASK_STORAGE"));
+        ITypes.Task memory task = taskStorage.getTask(taskUpdateParams.taskId);
 
-        task.content = _content;
-        task.description = _description;
-        task.priority = _priority;
-        task.dueDate = _dueDate;
-        task.tags = _tags;
+        ValidationLib.validateTaskModification(task, taskUpdateParams.caller);
+        ValidationLib.validateTaskCreation(taskUpdateParams.content, taskUpdateParams.dueDate);
+
+        task.content = taskUpdateParams.content;
+        task.description = taskUpdateParams.description;
+        task.priority = taskUpdateParams.priority;
+        task.dueDate = taskUpdateParams.dueDate;
+        task.tags = taskUpdateParams.tags;
         task.updatedAt = block.timestamp;
 
-        _taskStorage.updateTask(_taskId, task);
+        taskStorage.updateTask(taskUpdateParams.taskId, task);
         return task;
     }
 
-    /**
-     * @dev Updates task status
-     */
     function updateTaskStatus(
-        uint256 _taskId,
-        ITodoList.TaskStatus _status,
-        address _caller
-    ) external nonReentrant {
-        ITodoList.Task memory task = _taskStorage.getTask(_taskId);
-        ValidationLib.validateTaskModification(task, _caller);
+        uint256 taskId,
+        ITypes.TaskStatus status,
+        address caller
+    ) external onlyExistingTask(taskId) {
+        ITaskStorage taskStorage = ITaskStorage(registry.getContract("TASK_STORAGE"));
+        ITypes.Task memory task = taskStorage.getTask(taskId);
 
-        task.status = _status;
+        ValidationLib.validateTaskModification(task, caller);
+        task.status = status;
         task.updatedAt = block.timestamp;
 
-        _taskStorage.updateTask(_taskId, task);
+        taskStorage.updateTask(taskId, task);
     }
 
-    /**
-     * @dev Marks a task as deleted (soft delete)
-     */
-    function deleteTask(
-        uint256 _taskId,
-        address _caller
-    ) external nonReentrant {
-        ITodoList.Task memory task = _taskStorage.getTask(_taskId);
-        ValidationLib.validateTaskModification(task, _caller);
+    function deleteTask(uint256 taskId, address caller) external onlyExistingTask(taskId) {
+        ITaskStorage taskStorage = ITaskStorage(registry.getContract("TASK_STORAGE"));
+        ITypes.Task memory task = taskStorage.getTask(taskId);
 
+        ValidationLib.validateTaskModification(task, caller);
         task.isDeleted = true;
         task.updatedAt = block.timestamp;
 
-        _taskStorage.updateTask(_taskId, task);
+        taskStorage.updateTask(taskId, task);
     }
 
-    /**
-     * @dev Gets a single task
-     */
-    function getTask(
-        uint256 _taskId
-    ) external view returns (ITodoList.Task memory) {
-        return _taskStorage.getTask(_taskId);
+    function getTask(uint256 taskId) external view onlyExistingTask(taskId) returns (ITypes.Task memory) {
+        ITaskStorage taskStorage = ITaskStorage(registry.getContract("TASK_STORAGE"));
+        ITypes.Task memory task = taskStorage.getTask(taskId);
+        require(!task.isDeleted, "Task deleted");
+        return task;
     }
 
-    /**
-     * @dev Gets all tasks for a user
-     */
-    function getUserTasks(
-        address _user
-    ) external view returns (ITodoList.Task[] memory) {
-        uint256[] memory taskIds = _taskStorage.getUserTasks(_user);
-        ITodoList.Task[] memory tasks = new ITodoList.Task[](taskIds.length);
-        uint256 activeCount = 0;
+    function getUserTasks(address user) external view returns (ITypes.Task[] memory) {
+        ITaskStorage taskStorage = ITaskStorage(registry.getContract("TASK_STORAGE"));
+        uint256[] memory ids = taskStorage.getUserTasks(user);
+        uint256 activeCount;
 
-        // First count non-deleted tasks
-        for (uint256 i = 0; i < taskIds.length; i++) {
-            ITodoList.Task memory task = _taskStorage.getTask(taskIds[i]);
-            if (!task.isDeleted) {
-                activeCount++;
-            }
+        for (uint256 i = 0; i < ids.length; i++) {
+            ITypes.Task memory t = taskStorage.getTask(ids[i]);
+            if (!t.isDeleted) activeCount++;
         }
 
-        // Create array of active tasks
-        ITodoList.Task[] memory activeTasks = new ITodoList.Task[](activeCount);
-        uint256 j = 0;
-        for (uint256 i = 0; i < taskIds.length; i++) {
-            ITodoList.Task memory task = _taskStorage.getTask(taskIds[i]);
-            if (!task.isDeleted) {
-                activeTasks[j] = task;
-                j++;
+        ITypes.Task[] memory result = new ITypes.Task[](activeCount);
+        uint256 j;
+        for (uint256 i = 0; i < ids.length; i++) {
+            ITypes.Task memory t = taskStorage.getTask(ids[i]);
+            if (!t.isDeleted) {
+                result[j++] = t;
             }
         }
-
-        return activeTasks;
+        return result;
     }
 
-    /**
-     * @dev Gets tasks by status
-     */
-    function getTasksByStatus(
-        address _user,
-        ITodoList.TaskStatus _status
-    ) external view returns (ITodoList.Task[] memory) {
-        ITodoList.Task[] memory allTasks = this.getUserTasks(_user);
-        uint256 count = 0;
-
-        // Count tasks with matching status
-        for (uint256 i = 0; i < allTasks.length; i++) {
-            if (allTasks[i].status == _status) {
-                count++;
-            }
-        }
-
-        // Create filtered array
-        ITodoList.Task[] memory filteredTasks = new ITodoList.Task[](count);
-        uint256 j = 0;
-        for (uint256 i = 0; i < allTasks.length; i++) {
-            if (allTasks[i].status == _status) {
-                filteredTasks[j] = allTasks[i];
-                j++;
-            }
-        }
-
-        return filteredTasks;
-    }
-
-    /**
-     * @dev Gets tasks by priority
-     */
-    function getTasksByPriority(
-        address _user,
-        ITodoList.Priority _priority
-    ) external view returns (ITodoList.Task[] memory) {
-        ITodoList.Task[] memory allTasks = this.getUserTasks(_user);
-        uint256 count = 0;
-
-        for (uint256 i = 0; i < allTasks.length; i++) {
-            if (allTasks[i].priority == _priority) {
-                count++;
-            }
-        }
-
-        ITodoList.Task[] memory filteredTasks = new ITodoList.Task[](count);
-        uint256 j = 0;
-        for (uint256 i = 0; i < allTasks.length; i++) {
-            if (allTasks[i].priority == _priority) {
-                filteredTasks[j] = allTasks[i];
-                j++;
-            }
-        }
-
-        return filteredTasks;
-    }
-
-    /**
-     * @dev Gets tasks by category
-     */
-    function getTasksByCategory(
-        address _user,
-        uint256 _categoryId
-    ) external view returns (ITodoList.Task[] memory) {
-        ITodoList.Task[] memory allTasks = this.getUserTasks(_user);
-        uint256 count = 0;
-
-        for (uint256 i = 0; i < allTasks.length; i++) {
-            if (allTasks[i].categoryId == _categoryId) {
-                count++;
-            }
-        }
-
-        ITodoList.Task[] memory filteredTasks = new ITodoList.Task[](count);
-        uint256 j = 0;
-        for (uint256 i = 0; i < allTasks.length; i++) {
-            if (allTasks[i].categoryId == _categoryId) {
-                filteredTasks[j] = allTasks[i];
-                j++;
-            }
-        }
-
-        return filteredTasks;
-    }
-
-    /**
-     * @dev Gets tasks due before a specific timestamp
-     */
-    function getTasksDueBefore(
-        address _user,
-        uint256 _timestamp
-    ) external view returns (ITodoList.Task[] memory) {
-        ITodoList.Task[] memory allTasks = this.getUserTasks(_user);
-        uint256 count = 0;
-
-        for (uint256 i = 0; i < allTasks.length; i++) {
-            if (allTasks[i].dueDate < _timestamp) {
-                count++;
-            }
-        }
-
-        ITodoList.Task[] memory filteredTasks = new ITodoList.Task[](count);
-        uint256 j = 0;
-        for (uint256 i = 0; i < allTasks.length; i++) {
-            if (allTasks[i].dueDate < _timestamp) {
-                filteredTasks[j] = allTasks[i];
-                j++;
-            }
-        }
-
-        return filteredTasks;
-    }
-
-    /**
-     * @dev Gets task count by status
-     */
-    function getTaskCountByStatus(
-        address _user,
-        ITodoList.TaskStatus _status
-    ) external view returns (uint256) {
-        ITodoList.Task[] memory allTasks = this.getUserTasks(_user);
-        uint256 count = 0;
-
-        for (uint256 i = 0; i < allTasks.length; i++) {
-            if (allTasks[i].status == _status) {
-                count++;
-            }
-        }
-
-        return count;
-    }
-
-    /**
-     * @dev Function that should revert when msg.sender is not authorized to upgrade the contract
-     */
-    function _authorizeUpgrade(address) internal override onlyOwner {}
 }

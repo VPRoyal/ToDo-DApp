@@ -1,25 +1,26 @@
-// libraries/TaskLib.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "../interfaces/ITodoList.sol";
+import "../interfaces/ITypes.sol";
 
+/// @title TaskLib
+/// @notice Utility library for constructing task structs
 library TaskLib {
-    function createTaskStruct(
+    function buildTask(
         uint256 id,
         string memory content,
         string memory description,
-        ITodoList.Priority priority,
+        ITypes.Priority priority,
         uint256 dueDate,
         uint256 categoryId,
         string[] memory tags,
         address owner
-    ) internal view returns (ITodoList.Task memory) {
-        return ITodoList.Task({
+    ) internal view returns (ITypes.Task memory) {
+        return ITypes.Task({
             id: id,
             content: content,
             description: description,
-            status: ITodoList.TaskStatus.PENDING,
+            status: ITypes.TaskStatus.PENDING,
             priority: priority,
             dueDate: dueDate,
             createdAt: block.timestamp,

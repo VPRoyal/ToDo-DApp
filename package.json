@@ -1,6 +1,11 @@
 {
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/hardhat-upgrades": "^3.9.0",
+    "@openzeppelin/test-helpers": "^0.5.16",
+    "@types/dotenv": "^6.1.1",
+    "@types/node": "^24.0.4",
+    "chai": "^5.2.0",
     "hardhat": "^2.24.3"
   },
   "dependencies": {

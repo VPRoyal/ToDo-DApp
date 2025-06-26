@@ -1,45 +1,56 @@
-// logic/CategoryLogic.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "../interfaces/ITodoList.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
 import "../interfaces/ICategoryStorage.sol";
+import "../interfaces/IStorageAccessRegistry.sol";
 import "../libraries/CategoryLib.sol";
+import "../interfaces/ICategoryLogic.sol";
+import "../interfaces/ITypes.sol";
 
-contract CategoryLogic is Initializable, OwnableUpgradeable {
-    ICategoryStorage private _categoryStorage;
 
-    function initialize(address categoryStorage) public initializer {
+contract CategoryLogic is Initializable, UUPSUpgradeable, OwnableUpgradeable, ICategoryLogic{
+    IStorageAccessRegistry public registry;
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+constructor() {
+    _disableInitializers();
+}
+    function initialize(address registryAddress) public initializer {
         __Ownable_init(msg.sender);
-        _categoryStorage = ICategoryStorage(categoryStorage);
+        __UUPSUpgradeable_init();
+        registry = IStorageAccessRegistry(registryAddress);
     }
+    function _authorizeUpgrade(address) internal override onlyOwner {}
+
 
     function createCategory(
-        string memory _name,
-        string memory _color
+        address owner,
+        string memory name,
+        string memory color
     ) external returns (uint256) {
-        CategoryLib.validateCategoryName(_name);
+        ICategoryStorage categoryStorage = ICategoryStorage(registry.getContract("CATEGORY_STORAGE"));
+        CategoryLib.validateCategoryName(name);
 
-        ITodoList.Category memory newCategory = CategoryLib.createCategoryStruct(
-            0,
-            _name,
-            _color,
-            msg.sender
+        ITypes.Category memory category = CategoryLib.buildCategory(
+            0, name, color, owner
         );
 
-        return _categoryStorage.storeCategory(newCategory);
+        return categoryStorage.storeCategory(category);
     }
 
-    function getUserCategories() external view returns (ITodoList.Category[] memory) {
-        uint256[] memory categoryIds = _categoryStorage.getUserCategories(msg.sender);
-        ITodoList.Category[] memory categories = new ITodoList.Category[](categoryIds.length);
+    function getUserCategories(address user) external view returns (ITypes.Category[] memory) {
+        ICategoryStorage categoryStorage = ICategoryStorage(registry.getContract("CATEGORY_STORAGE"));
+        uint256[] memory ids = categoryStorage.getUserCategories(user);
+        ITypes.Category[] memory result = new ITypes.Category[](ids.length);
 
-        for (uint256 i = 0; i < categoryIds.length; i++) {
-            categories[i] = _categoryStorage.getCategory(categoryIds[i]);
+        for (uint256 i = 0; i < ids.length; i++) {
+            result[i] = categoryStorage.getCategory(ids[i]);
         }
 
-        return categories;
+        return result;
     }
 }
