@@ -9,7 +9,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 contract StorageAccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     mapping(bytes32 => address) private registry;
 
-    event ContractRegistered(bytes32 indexed key, address indexed contractAddress);
+    event ContractRegistered(string label, bytes32 indexed key, address indexed contractAddress);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -24,14 +24,16 @@ contract StorageAccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgrade
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
     /// @notice Registers or updates a contract address under a specific key
-    function setContract(bytes32 key, address contractAddr) external onlyOwner {
+    function setContract(string memory label, address contractAddr) external onlyOwner {
         require(contractAddr != address(0), "Zero address not allowed");
+        bytes32 key = toKey(label);
         registry[key] = contractAddr;
-        emit ContractRegistered(key, contractAddr);
+        emit ContractRegistered(label,key, contractAddr);
     }
 
     /// @notice Returns a registered contract address by key
-    function getContract(bytes32 key) external view returns (address) {
+    function getContract(string memory label) external view returns (address) {
+        bytes32 key = toKey(label);
         return registry[key];
     }
 
@@ -41,7 +43,7 @@ contract StorageAccessRegistry is Initializable, UUPSUpgradeable, OwnableUpgrade
     }
 
     /// @notice Helper to convert string to bytes32 key
-    function toKey(string memory label) public pure returns (bytes32) {
+    function toKey(string memory label) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(label));
     }
 }

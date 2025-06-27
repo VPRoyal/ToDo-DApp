@@ -66,10 +66,10 @@ async function main() {
   console.log("✅ TodoList:", deployed["TodoList"]);
 
   // Register module addresses
-  await registry.setContract(await registry.toKey("TASK_STORAGE"), deployed["TaskStorage"]);
-  await registry.setContract(await registry.toKey("CATEGORY_STORAGE"), deployed["CategoryStorage"]);
-  await registry.setContract(await registry.toKey("TASK_LOGIC"), deployed["TaskLogic"]);
-  await registry.setContract(await registry.toKey("CATEGORY_LOGIC"), deployed["CategoryLogic"]);
+  await registry.setContract("TASK_STORAGE", deployed["TaskStorage"]);
+  await registry.setContract("CATEGORY_STORAGE", deployed["CategoryStorage"]);
+  await registry.setContract("TASK_LOGIC", deployed["TaskLogic"]);
+  await registry.setContract("CATEGORY_LOGIC", deployed["CategoryLogic"]);
 
   // Write to deployed.contracts.json
   fs.writeFileSync(

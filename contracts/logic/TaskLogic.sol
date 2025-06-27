@@ -32,6 +32,10 @@ constructor() {
         registry = IStorageAccessRegistry(registryAddress);
     }
     function _authorizeUpgrade(address) internal override onlyOwner {}
+    function setRegistry(address registryAddress) external onlyOwner {
+        require(registryAddress != address(0), "Zero address not allowed");
+        registry = IStorageAccessRegistry(registryAddress);
+    }
 
     modifier onlyExistingTask(uint256 taskId) {
         ITaskStorage taskStorage = ITaskStorage(registry.getContract("TASK_STORAGE"));
@@ -54,7 +58,7 @@ constructor() {
             taskParams.tags,
             taskParams.owner
         );
-
+        emit TaskAddedInQueue(newTask.id, newTask.owner, block.timestamp);
         return taskStorage.storeTask(newTask);
     }
 

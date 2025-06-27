@@ -6,6 +6,7 @@ import "./ITypes.sol";
 /// @title ITaskStorage
 /// @notice Interface for task data persistence
 interface ITaskStorage {
+    event TaskStored(uint256 indexed taskId, address indexed owner);
     function storeTask(ITypes.Task memory task) external returns (uint256);
     function getTask(uint256 taskId) external view returns (ITypes.Task memory);
     function updateTask(uint256 taskId, ITypes.Task memory task) external;

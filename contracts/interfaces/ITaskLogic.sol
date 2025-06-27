@@ -6,6 +6,8 @@ pragma solidity ^0.8.19;
 import "./ITypes.sol";
 
 interface ITaskLogic {
+    event TaskAddedInQueue(uint256 indexed id, address indexed owner, uint256 timestamp);
+
     function createTask(ITypes.TaskCreationParams calldata taskParams) external returns (uint256);
 
     function updateTask(ITypes.TaskUpdateParams calldata taskUpdateParams) external returns (ITypes.Task memory);

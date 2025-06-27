@@ -26,7 +26,10 @@ constructor() {
     }
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
-
+    function setRegistry(address registryAddress) external onlyOwner {
+        require(registryAddress != address(0), "Zero address not allowed");
+        registry = IStorageAccessRegistry(registryAddress);
+    }
     function createCategory(
         address owner,
         string memory name,

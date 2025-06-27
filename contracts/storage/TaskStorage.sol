@@ -31,6 +31,7 @@ contract TaskStorage is Initializable,UUPSUpgradeable, OwnableUpgradeable,ITaskS
         task.id = _taskIds;
         tasks[_taskIds] = task;
         userTasks[task.owner].push(_taskIds);
+        emit TaskStored(_taskIds, task.owner);
         return _taskIds;
     }
 
