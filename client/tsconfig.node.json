@@ -12,6 +12,7 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
+    "jsx": "react-jsx",
 
     /* Linting */
     "strict": true,
@@ -25,6 +26,6 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src","vite.config.ts"],
-  "exclude": ["node_modules", "dist", "build", "coverage", "cypress", "e2e", "cypress.config.ts"]
+  "include": ["src/**/*.ts", "vite.config.ts"],
+  "exclude": ["src/**/*.tsx", "node_modules", "dist", "build"]
 }

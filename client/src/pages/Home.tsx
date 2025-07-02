@@ -1,12 +1,14 @@
-
+import {lazy, Suspense} from "react"
 import Header from "@/components/layout/header"
-import Sidebar from "@/components/layout/sidebar"
-import MainDashboard from "@/components/layout/mainDashboard"
+import Footer from "@/components/layout/footer"
 import TransactionStatus from "@/components/tasks/transactionStatus"
 import  AddTaskModal from "@/components/tasks/addTaskModal"
 import { useTasks } from "@/hooks/useTask"
 import { useContract } from "@/hooks/useContract"
-import Footer from "@/components/layout/footer"
+import LoadingSpinner from "@/components/common/loadingSpinner"
+
+const Sidebar = lazy(() => import("@/components/layout/sidebar"))
+const MainDashboard = lazy(() => import("@/components/layout/mainDashboard"))
 
 const Home = () => {
 const taskOp = useTasks()
@@ -16,6 +18,7 @@ const { isConnected, transactionState } = useContract()
     <div className="flex flex-col h-screen">
       <Header onMenuClick={() => taskOp.setSidebarOpen(!taskOp.sidebarOpen)} />
         <div className="flex h-svh">
+          <Suspense fallback={<LoadingSpinner/>}>
           <Sidebar
           categories={taskOp.userCategories}
           activeCategory={taskOp.activeCategoryId}
@@ -24,7 +27,9 @@ const { isConnected, transactionState } = useContract()
           isOpen={taskOp.sidebarOpen}
           onClose={() => taskOp.setSidebarOpen(false)}
         />
+        </Suspense>
         {/* TODO: Need to check isLoading and isConnected, whether they are correctly set or not */}
+        <Suspense fallback={<LoadingSpinner/>}>
         <MainDashboard
           tasks={taskOp.filteredTasks}
           allTags={taskOp.allTags}
@@ -37,6 +42,7 @@ const { isConnected, transactionState } = useContract()
           isConnected={isConnected}
           categories={taskOp.categories}
         />
+        </Suspense>
         </div>
 
         <AddTaskModal
@@ -53,6 +59,7 @@ const { isConnected, transactionState } = useContract()
         txHash={transactionState.txHash}
         error={transactionState.error}
       />
+
       <div className="mt-auto">
       <Footer />
       </div>

@@ -10,7 +10,7 @@ interface StatsPanelProps {
 }
 
 export function StatsPanel({ totalTasks, completedTasks, pendingTasks }: StatsPanelProps) {
-  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+  // const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
 
   return (
     <div className="grid gap-4 md:grid-cols-3">

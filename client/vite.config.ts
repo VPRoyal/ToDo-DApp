@@ -11,4 +11,18 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build:{
+    rollupOptions:{
+      output:{
+        manualChunks:{
+          dashboard: ['@/components/layout/mainDashboard'],
+          wallet: ['@/context/walletProvider'],
+          contract: ['@/hooks/useContract'],
+          taskOperations: ['@/hooks/useTaskOperations'],
+          taskModal: ['@/components/tasks/addTaskModal']
+
+        }
+      }
+    }
+  }
 })
