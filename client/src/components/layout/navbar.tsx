@@ -1,6 +1,6 @@
 // src/components/layout/Navbar.tsx
 import React from 'react';
-import { useWeb3 } from '../../hooks/useWeb3';
+import { useWeb3 } from '../../hooksOld/useWeb3';
 // import WalletConnect from '../web3/WalletConnect';
 
 const Navbar: React.FC = () => {

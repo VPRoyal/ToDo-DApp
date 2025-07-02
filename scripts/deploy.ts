@@ -1,4 +1,5 @@
 import { ethers, upgrades } from "hardhat";
+import { exportAbi } from "./exportABI";
 import * as fs from "fs";
 
 async function main() {
@@ -79,9 +80,27 @@ async function main() {
   );
 
   console.log("📄 Deployment addresses saved to deployed.contracts.json");
+
+  exportAbi({
+  contractPath: "contracts/core/TodoList.sol",
+  contractName: "TodoList",
+  outputDir: "client/src/lib",
+  outputFileName: "TodoListABI.json",
+  constractAddress:deployed["TodoList"]
+});
 }
 
 main().catch((error) => {
   console.error("❌ Deployment failed:", error);
   process.exitCode = 1;
 });
+
+
+
+/**
+  * This script deploys the Todo DApp smart contracts using Hardhat and OpenZeppelin Upgrades.
+  * Deployment command: npx hardhat run scripts/deploy.ts --network <network>
+  * 
+  * Export ABI command for TodoList Contract: npx hardhat export-abi --contract TodoList --output ./client/src/lib/TodoListABI.json
+
+ */

@@ -1,7 +1,7 @@
 // src/components/tasks/TaskForm.tsx
 import React, { useState } from 'react';
 // import { useContract } from '@/hooks/useContract';
-import Button from '../../common/button';
+import Button from '../common/button2';
 
 const TaskForm: React.FC = () => {
   const [content, setContent] = useState('');

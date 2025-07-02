@@ -1,71 +1,118 @@
-// src/components/layout/Sidebar.tsx
-import React from 'react';
-import { 
-  HomeIcon, 
-  ViewColumnsIcon, 
-  ChartBarIcon, 
-  CogIcon 
-} from '@heroicons/react/24/outline';
+"use client"
 
-interface SidebarItem {
-  id: string;
-  name: string;
-  icon: React.ComponentType<any>;
-  count?: number;
+import { useState } from "react"
+import { Button } from "@/components/common/button"
+import { Input } from "@/components/common/input"
+import { Sheet, SheetContent } from "@/components/common/sheet"
+import { Badge } from "@/components/common/badge"
+import { Plus, X } from "lucide-react"
+import type { Category, NewCategory } from "@/types"
+
+interface SidebarProps {
+  categories: Omit<Category, "owner">[]
+  activeCategory?: string
+  onCategorySelect: (categoryId: string) => void
+  onAddCategory: (category:NewCategory) => Promise<void>
+  isOpen: boolean
+  onClose: () => void
 }
 
-const sidebarItems: SidebarItem[] = [
-  { id: 'dashboard', name: 'Dashboard', icon: HomeIcon },
-  { id: 'board', name: 'Board View', icon: ViewColumnsIcon },
-  { id: 'analytics', name: 'Analytics', icon: ChartBarIcon },
-  { id: 'settings', name: 'Settings', icon: CogIcon },
-];
+const Sidebar=({
+  categories,
+  activeCategory,
+  onCategorySelect,
+  onAddCategory,
+  isOpen,
+  onClose,
+}: SidebarProps)=> {
+  const [showAddCategory, setShowAddCategory] = useState(false)
+  var categoryInput="";
 
-const Sidebar: React.FC = () => {
-  const [active, setActive] = React.useState('dashboard');
-
-  return (
-    <div className="w-64 bg-white h-screen fixed left-0 top-16 border-r border-gray-200">
-      <div className="p-4">
-        <nav className="space-y-1">
-          {sidebarItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActive(item.id)}
-              className={`
-                w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg
-                ${active === item.id 
-                  ? 'bg-blue-50 text-blue-600' 
-                  : 'text-gray-700 hover:bg-gray-50'}
-              `}
-            >
-              <item.icon className="mr-3 h-5 w-5" />
-              <span className="flex-1 text-left">{item.name}</span>
-              {item.count && (
-                <span className="ml-3 inline-block py-0.5 px-2 text-xs rounded-full bg-blue-100 text-blue-600">
-                  {item.count}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
+  const handleAddCategory = () => {
+    if (categoryInput.trim()) {
+      // ToDo: we entering category color as hardcoded, need to be make as per chosen.
+      onAddCategory({name:categoryInput.trim(), color:"red"})
+      categoryInput="";
+      setShowAddCategory(false)
+    }
+  }
+  const SidebarContent = () => (
+    <div className="flex h-full flex-col">
+      <div className="border-b-1 border-border mb-4 py-4">
+        <h2 className="text-lg font-semibold text-center ">Categories</h2>
       </div>
 
-      {/* User Profile Section */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
-          <div className="ml-3">
-            <p className="text-sm font-medium text-gray-700">Connected Wallet</p>
-            <p className="text-xs text-gray-500 truncate">
-              {/* Add wallet address here */}
-              0x1234...5678
-            </p>
+      <nav className="flex-1 space-y-1 px-4">
+        {categories.length===0?
+        (<div className="text-center text-sm w-full">No categories available</div>):
+        categories.map((category) => (
+          <Button
+            key={category.id}
+            variant={activeCategory === category.id ? "secondary" : "ghost"}
+            className="w-full justify-between"
+            onClick={() => {
+              onCategorySelect(category.id)
+              onClose()
+            }}
+          >
+            <span>{category.name}</span>
+            <Badge variant="outline" className="ml-auto">
+              {category.count}
+            </Badge>
+          </Button>
+        ))}
+      </nav>
+
+      <div className="p-4">
+        {showAddCategory ? (
+          <div className="space-y-2">
+            <Input
+              placeholder="Category name"
+              defaultValue={categoryInput}
+              onChange={(e) => categoryInput=e.target.value}
+              onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
+            />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleAddCategory}>
+                Add
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  categoryInput=""
+                  setShowAddCategory(false)
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <Button variant="outline" className="w-full bg-transparent" onClick={() => setShowAddCategory(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Category
+          </Button>
+        )}
       </div>
     </div>
-  );
-};
+  )
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r lg:bg-muted/10">
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile Sidebar */}
+      <Sheet open={isOpen} onOpenChange={onClose}>
+        <SheetContent side="left" className="w-64 p-0">
+          <SidebarContent />
+        </SheetContent>
+      </Sheet>
+    </>
+  )
+}
 
 export default Sidebar;

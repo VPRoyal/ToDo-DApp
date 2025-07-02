@@ -1,13 +1,16 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Toaster } from 'react-hot-toast'
-import { Web3Provider } from './providers/Web3Provider'
+// import { Web3Provider } from './context/Web3Provider'
 import './index.css'
 import App from './App'
+import { ThemeProvider } from './context/themeProvider'
+import { WalletProvider } from './context/walletProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Web3Provider>
+    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme" >
+      <WalletProvider>
       <App />
       <Toaster 
         position="top-right"
@@ -19,6 +22,7 @@ createRoot(document.getElementById('root')!).render(
           },
         }}
       />
-    </Web3Provider>
+      </WalletProvider>
+    </ThemeProvider>
   </StrictMode>,
 )
